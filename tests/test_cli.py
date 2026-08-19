@@ -324,7 +324,7 @@ def test_launch_chrome_not_found_clean_error(monkeypatch, capsys):
 
     from chrome_agent import cli
 
-    monkeypatch.setattr("chrome_agent.launcher.find_chrome_binary", lambda: None)
+    monkeypatch.setattr("chrome_agent.launcher.find_chrome_binary", lambda binary=None: None)
     with pytest.raises(SystemExit) as exc_info:
         asyncio.run(cli._run_launch(args=[]))
     assert exc_info.value.code == 1
