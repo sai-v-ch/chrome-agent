@@ -406,6 +406,27 @@ async def _run_cdp_one_shot(
         sys.exit(1)
 
 
+def _reject_extra_positional(verb: str, first: str | None, extra: str) -> None:
+    """Fail a verb given a second positional, naming the likely cause.
+
+    The usual cause is a mistyped or already-stopped instance name: it is not
+    in the registry, so _split_instance leaves it in place and it is consumed
+    as the verb's own argument. Reporting only "unknown option" would point at
+    the wrong token entirely.
+    """
+    if first is not None and not first.startswith("-"):
+        print(
+            f"Error: unexpected argument: {extra}\n"
+            f"       '{first}' was read as the argument to {verb}; "
+            f"if it is an instance name, it is not registered "
+            f"(check: chrome-agent status)",
+            file=sys.stderr,
+        )
+    else:
+        print(f"Error: unknown {verb} option: {extra}", file=sys.stderr)
+    sys.exit(1)
+
+
 def _resolve_port_or_exit(instance_name: str | None) -> int:
     """Resolve an instance to a port, or exit 1 with the reason."""
     from .page_ops import (
@@ -465,8 +486,9 @@ async def _run_eval(args: list[str], target_spec: str | None, url_spec: str | No
             expression = rest[i]
             i += 1
         else:
-            print(f"Error: unknown eval option: {rest[i]}", file=sys.stderr)
-            sys.exit(1)
+            _reject_extra_positional(
+                verb="eval", first=expression, extra=rest[i]
+            )
 
     if source_path is not None:
         if expression is not None:
@@ -677,8 +699,7 @@ async def _run_navigate(args: list[str], target_spec: str | None, url_spec: str 
             url = rest[i]
             i += 1
         else:
-            print(f"Error: unknown navigate option: {rest[i]}", file=sys.stderr)
-            sys.exit(1)
+            _reject_extra_positional(verb="navigate", first=url, extra=rest[i])
 
     if url is None:
         print("Error: no URL given", file=sys.stderr)
